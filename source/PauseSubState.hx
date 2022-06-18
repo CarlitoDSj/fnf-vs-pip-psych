@@ -19,7 +19,7 @@ class PauseSubState extends MusicBeatSubstate
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
 
 	var menuItems:Array<String> = [];
-	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Difficulty', 'Exit to menu'];
+	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Options', 'Change Difficulty', 'Exit to menu'];
 	var difficultyChoices = [];
 	var curSelected:Int = 0;
 
@@ -171,6 +171,9 @@ class PauseSubState extends MusicBeatSubstate
 					practiceText.visible = PlayState.instance.practiceMode;
 				case "Restart Song":
 					restartSong();
+				case "Options": //Note: If you want to use this code, you don't have to credit me, I did this out of love for this mod -- Just Jack :)
+					remove(grpMenuShit);
+					openSubState(new OptionsSubState());
 				case 'Toggle Botplay':
 					PlayState.instance.cpuControlled = !PlayState.instance.cpuControlled;
 					PlayState.changedDifficulty = true;
@@ -261,5 +264,119 @@ class PauseSubState extends MusicBeatSubstate
 		}
 		curSelected = 0;
 		changeSelection();
+	}
+}
+
+class OptionsSubState extends MusicBeatSubstate
+{
+	var options:Array<String> = ['Controls', 'Note Colors', 'Graphics', 'Visuals and UI', 'Gameplay'];
+	private var grpOptions:FlxTypedGroup<Alphabet>;
+	private static var curSelected:Int = 0;
+	public static var menuBG:FlxSprite;
+	public var shittymcshitfart:FlxCamera;
+
+	function openSelectedSubstate(label:String) {
+		switch(label) {
+			case 'Note Colors':
+				openSubState(new options.NotesSubState());
+			case 'Controls':
+				openSubState(new options.ControlsSubState());
+			case 'Graphics':
+				openSubState(new options.GraphicsSettingsSubState());
+			case 'Visuals and UI':
+				openSubState(new options.VisualsUISubState());
+			case 'Gameplay':
+				openSubState(new options.GameplaySettingsSubState());
+		}
+	}
+
+	var selectorLeft:Alphabet;
+	var selectorRight:Alphabet;
+
+	override function create() {
+		shittymcshitfart = new FlxCamera();
+		shittymcshitfart.bgColor.alpha = 0;
+		FlxG.cameras.add(shittymcshitfart);
+		FlxCamera.defaultCameras = [shittymcshitfart];
+
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		bg.color = 0xFFea71fd;
+		bg.updateHitbox();
+		bg.screenCenter();
+		bg.scale.set(1.1, 1.1);
+		bg.antialiasing = ClientPrefs.globalAntialiasing;
+		add(bg);
+
+		grpOptions = new FlxTypedGroup<Alphabet>();
+		add(grpOptions);
+
+		for (i in 0...options.length)
+		{
+			var optionText:Alphabet = new Alphabet(0, 0, options[i], true, false);
+			optionText.screenCenter();
+			//optionText.cameras = [shittymcshitfart];
+			optionText.y += (100 * (i - (options.length / 2))) + 50;
+			grpOptions.add(optionText);
+		}
+
+		selectorLeft = new Alphabet(0, 0, '>', true, false);
+		add(selectorLeft);
+		selectorRight = new Alphabet(0, 0, '<', true, false);
+		add(selectorRight);
+
+		changeSelection();
+		ClientPrefs.saveSettings();
+
+		super.create();
+	}
+
+	override function closeSubState() {
+		super.closeSubState();
+		ClientPrefs.saveSettings();
+	}
+
+	override function update(elapsed:Float) {
+		super.update(elapsed);
+
+		if (controls.UI_UP_P) {
+			changeSelection(-1);
+		}
+		if (controls.UI_DOWN_P) {
+			changeSelection(1);
+		}
+
+		if (controls.BACK) {
+			close();
+			PauseSubState.restartSong();
+		}
+
+		if (controls.ACCEPT) {
+			openSelectedSubstate(options[curSelected]);
+		}
+	}
+	
+	function changeSelection(change:Int = 0) {
+		curSelected += change;
+		if (curSelected < 0)
+			curSelected = options.length - 1;
+		if (curSelected >= options.length)
+			curSelected = 0;
+
+		var bullShit:Int = 0;
+
+		for (item in grpOptions.members) {
+			item.targetY = bullShit - curSelected;
+			bullShit++;
+
+			item.alpha = 0.6;
+			if (item.targetY == 0) {
+				item.alpha = 1;
+				selectorLeft.x = item.x - 63;
+				selectorLeft.y = item.y;
+				selectorRight.x = item.x + item.width + 15;
+				selectorRight.y = item.y;
+			}
+		}
+		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
 }
